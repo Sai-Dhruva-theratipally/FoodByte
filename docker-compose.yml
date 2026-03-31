@@ -1,0 +1,22 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: foodbyte-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: foodapp
+      MYSQL_USER: foodbyte
+      MYSQL_PASSWORD: foodbytepass
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - foodbyte_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpass"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  foodbyte_mysql_data:

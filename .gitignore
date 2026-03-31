@@ -1,0 +1,11 @@
+# Backend build output
+backend/target/
+
+# Frontend deps/build output
+frontend/node_modules/
+frontend/dist/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/

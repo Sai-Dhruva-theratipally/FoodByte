@@ -1,5 +1,6 @@
 package com.foodbyte.security;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 import javax.crypto.SecretKey;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 
@@ -39,19 +39,19 @@ public class JwtService {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
-        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
 
         return Jwts.builder()
                 .subject(username)
                 .claim("userId", userId)
                 .issuedAt(now)
                 .expiration(expiryDate)
-                .signWith(key, SignatureAlgorithm.HS512)
+            .signWith(key, Jwts.SIG.HS256)
                 .compact();
     }
 
     public String getUsernameFromToken(String token) {
-        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         Claims claims = Jwts.parser()
                 .verifyWith(key)
                 .build()
@@ -61,7 +61,7 @@ public class JwtService {
     }
 
     public Long getUserIdFromToken(String token) {
-        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         Claims claims = Jwts.parser()
                 .verifyWith(key)
                 .build()
@@ -85,7 +85,7 @@ public class JwtService {
 
     public boolean validateToken(String token) {
         try {
-            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
             Jwts.parser()
                     .verifyWith(key)
                     .build()

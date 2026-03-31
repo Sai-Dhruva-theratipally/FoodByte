@@ -1,5 +1,6 @@
 package com.foodbyte.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -17,6 +18,7 @@ public class LoginRequest {
     private String email;
 
     @NotBlank(message = "Password is required")
+    @JsonAlias({"possword"})
     private String password;
 }
 
