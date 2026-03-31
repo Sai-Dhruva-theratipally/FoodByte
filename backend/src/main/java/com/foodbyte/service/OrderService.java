@@ -1,5 +1,12 @@
 package com.foodbyte.service;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.foodbyte.dto.OrderItemResponse;
 import com.foodbyte.dto.OrderRequest;
 import com.foodbyte.dto.OrderResponse;
@@ -15,13 +22,8 @@ import com.foodbyte.repository.CartRepository;
 import com.foodbyte.repository.OrderItemRepository;
 import com.foodbyte.repository.OrderRepository;
 import com.foodbyte.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -140,7 +142,13 @@ public class OrderService {
         return mapToOrderResponse(updatedOrder);
     }
 
-    private OrderResponse mapToOrderResponse(Order order) {
+    public List<OrderResponse> getAllOrders() {
+        return orderRepository.findAll().stream()
+                .map(this::mapToOrderResponse)
+                .collect(Collectors.toList());
+    }
+
+    public OrderResponse mapToOrderResponse(Order order) {
         List<OrderItemResponse> items = order.getItems().stream()
                 .map(item -> OrderItemResponse.builder()
                         .id(item.getId())
