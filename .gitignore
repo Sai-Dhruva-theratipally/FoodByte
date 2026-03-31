@@ -1,0 +1,30 @@
+# Maven build artifacts
+backend/target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Log files
+*.log
+backend/compile_errors.txt
+backend/backend.txt
+
+# IDE files
+.idea/
+*.iml
+.eclipse/
+.classpath
+.project
+.settings/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+*.env.local
