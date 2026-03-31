@@ -7,10 +7,12 @@ import com.foodbyte.entity.Cart;
 import com.foodbyte.entity.Role;
 import com.foodbyte.entity.User;
 import com.foodbyte.exception.ConflictException;
+import com.foodbyte.exception.UnprocessableEntityException;
 import com.foodbyte.repository.CartRepository;
 import com.foodbyte.repository.UserRepository;
 import com.foodbyte.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -28,17 +30,27 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
+        @Value("${app.security.allow-admin-registration:false}")
+        private boolean allowAdminRegistration;
+
     @Transactional
     public JwtResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new ConflictException("Email already registered: " + request.getEmail());
         }
 
+                Role desiredRole = request.getRole() == null ? Role.USER : request.getRole();
+                if (desiredRole == Role.ADMIN) {
+                        if (!allowAdminRegistration) {
+                                throw new UnprocessableEntityException("Admin registration is disabled");
+                        }
+                }
+
         User user = User.builder()
                 .email(request.getEmail())
                 .name(request.getName())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.USER)
+                .role(desiredRole)
                 .build();
 
         User savedUser = userRepository.save(user);

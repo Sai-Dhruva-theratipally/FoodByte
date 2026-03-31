@@ -1,172 +1,223 @@
-import { useEffect, useState } from "react";
-import Loading from "../components/Loading";
-import Message from "../components/Message";
-import PageHeader from "../components/PageHeader";
+import React, { useEffect, useMemo, useState } from "react";
+import Layout from "../components/Layout";
+import ErrorNotice from "../components/ErrorNotice";
 import {
+  createOrder,
   getCart,
-  getErrorMessage,
-  getProducts,
-  placeOrder,
+  listProducts,
   removeCartItem,
   updateCartItem,
-} from "../services/api";
+} from "../services/food";
+import { formatMoney } from "../utils/format";
 
-function Cart() {
-  const [cartItems, setCartItems] = useState([]);
+export default function CartPage() {
+  const [cart, setCart] = useState(null);
+  const [productsById, setProductsById] = useState(() => new Map());
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [placingOrder, setPlacingOrder] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
+  const [notes, setNotes] = useState("");
 
-  const fetchCart = async () => {
+  async function refresh() {
+    setLoading(true);
+    setError(null);
     try {
-      const [cartData, productsData] = await Promise.all([getCart(), getProducts()]);
-      const products = Array.isArray(productsData) ? productsData : [];
-      const productMap = products.reduce((map, product) => {
-        map[product.id] = product;
-        return map;
-      }, {});
-      const items = Array.isArray(cartData?.items) ? cartData.items : [];
-
-      setCartItems(
-        items.map((item) => ({
-          ...item,
-          product: productMap[item.productId] || null,
-        }))
-      );
-    } catch (apiError) {
-      setError(getErrorMessage(apiError, "Could not load cart."));
+      const [c, products] = await Promise.all([getCart(), listProducts()]);
+      setCart(c);
+      const map = new Map();
+      (Array.isArray(products) ? products : []).forEach((p) => map.set(p.id, p));
+      setProductsById(map);
+    } catch (err) {
+      setError(err);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   useEffect(() => {
-    fetchCart();
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleUpdateQuantity = async (id, quantity) => {
-    if (quantity < 1) {
-      return;
-    }
+  const items = cart?.items || [];
 
-    setError("");
-    setMessage("");
-
+  async function onUpdate(itemId, quantity) {
+    setBusy(true);
+    setNotice(null);
+    setError(null);
     try {
-      await updateCartItem(id, quantity);
-      setMessage("Cart updated.");
-      fetchCart();
-    } catch (apiError) {
-      setError(getErrorMessage(apiError, "Could not update quantity."));
-    }
-  };
-
-  const handleRemoveItem = async (id) => {
-    setError("");
-    setMessage("");
-
-    try {
-      await removeCartItem(id);
-      setMessage("Item removed from cart.");
-      fetchCart();
-    } catch (apiError) {
-      setError(getErrorMessage(apiError, "Could not remove item."));
-    }
-  };
-
-  const handlePlaceOrder = async () => {
-    setPlacingOrder(true);
-    setError("");
-    setMessage("");
-
-    try {
-      await placeOrder("");
-      setMessage("Order placed successfully.");
-      fetchCart();
-    } catch (apiError) {
-      setError(getErrorMessage(apiError, "Could not place order."));
+      await updateCartItem(itemId, quantity);
+      await refresh();
+      setNotice("Cart updated");
+    } catch (err) {
+      setError(err);
     } finally {
-      setPlacingOrder(false);
+      setBusy(false);
     }
-  };
+  }
 
-  const totalAmount = cartItems.reduce((sum, item) => {
-    const price = Number(item.product?.price || 0);
-    return sum + price * item.quantity;
-  }, 0);
+  async function onRemove(itemId) {
+    setBusy(true);
+    setNotice(null);
+    setError(null);
+    try {
+      await removeCartItem(itemId);
+      await refresh();
+      setNotice("Item removed");
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
 
-  return (
-    <main className="page">
-      <PageHeader title="Cart" subtitle="Review your selected items before placing the order." />
+  async function onCheckout() {
+    setBusy(true);
+    setNotice(null);
+    setError(null);
+    try {
+      const order = await createOrder(notes);
+      setNotes("");
+      await refresh();
+      setNotice(`Order created (#${order?.id})`);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
 
-      {loading ? <Loading text="Loading cart..." /> : null}
-      <Message type="error" text={error} />
-      <Message type="success" text={message} />
+  const estimatedTotal = useMemo(() => {
+    if (!items.length) return 0;
+    let sum = 0;
+    for (const it of items) {
+      const p = productsById.get(it.productId);
+      const price = Number(p?.price || 0);
+      sum += price * Number(it.quantity || 0);
+    }
+    return sum;
+  }, [items, productsById]);
 
-      {!loading && !error ? (
-        <div className="stack-layout">
-          {cartItems.length > 0 ? (
-            <>
-              <div className="list-card">
-                {cartItems.map((item) => (
-                  <div className="list-row" key={item.id}>
-                    <div>
-                      <h3>{item.product?.name || `Product #${item.productId}`}</h3>
-                      <p className="muted-text">
-                        {item.product?.restaurantName || "Restaurant not available"}
-                      </p>
-                      <p className="muted-text">
-                        Rs. {item.product?.price ?? 0}
-                      </p>
+  const content = useMemo(() => {
+    if (loading) return <div className="notice">Loading cart…</div>;
+
+    if (!items.length) {
+      return <div className="notice">Your cart is empty.</div>;
+    }
+
+    return (
+      <div className="surface card stack">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th style={{ width: 110 }}>Qty</th>
+              <th style={{ width: 120 }}>Price</th>
+              <th style={{ width: 120 }}>Total</th>
+              <th style={{ width: 120 }} />
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((it) => {
+              const p = productsById.get(it.productId);
+              const unit = Number(p?.price || 0);
+              const line = unit * Number(it.quantity || 0);
+
+              return (
+                <tr key={it.id}>
+                  <td>
+                    <div className="stack" style={{ gap: 2 }}>
+                      <div className="h2">{p?.name || `Product #${it.productId}`}</div>
+                      <div className="muted small">CartItem #{it.id}</div>
                     </div>
-
-                    <div className="quantity-controls">
+                  </td>
+                  <td>
+                    <div className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
                       <button
+                        className="button ghost"
                         type="button"
-                        onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                        onClick={() => onUpdate(it.id, Math.max(1, Number(it.quantity || 1) - 1))}
+                        disabled={busy || Number(it.quantity || 1) <= 1}
                       >
                         -
                       </button>
-                      <span>{item.quantity}</span>
+                      <span className="kbd">{it.quantity}</span>
                       <button
+                        className="button ghost"
                         type="button"
-                        onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                        onClick={() => onUpdate(it.id, Number(it.quantity || 1) + 1)}
+                        disabled={busy}
                       >
                         +
                       </button>
                     </div>
-
+                  </td>
+                  <td>{formatMoney(unit)}</td>
+                  <td>{formatMoney(line)}</td>
+                  <td>
                     <button
+                      className="button danger"
                       type="button"
-                      className="danger-button"
-                      onClick={() => handleRemoveItem(item.id)}
+                      onClick={() => onRemove(it.id)}
+                      disabled={busy}
                     >
                       Remove
                     </button>
-                  </div>
-                ))}
-              </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
 
-              <div className="summary-card">
-                <h3>Total: Rs. {totalAmount.toFixed(2)}</h3>
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={handlePlaceOrder}
-                  disabled={placingOrder}
-                >
-                  {placingOrder ? "Placing order..." : "Place Order"}
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="status-card">Your cart is empty.</div>
-          )}
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <div className="stack" style={{ gap: 6, minWidth: 260 }}>
+            <label className="small muted">Order notes (optional)</label>
+            <input
+              className="input"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g., No onions"
+              maxLength={500}
+              disabled={busy}
+            />
+          </div>
+
+          <div className="stack" style={{ alignItems: "flex-end" }}>
+            <div className="muted small">Estimated total</div>
+            <div className="h2">{formatMoney(estimatedTotal)}</div>
+            <button
+              className="button primary"
+              type="button"
+              onClick={onCheckout}
+              disabled={busy}
+            >
+              Place order
+            </button>
+          </div>
         </div>
-      ) : null}
-    </main>
+      </div>
+    );
+  }, [busy, estimatedTotal, items, loading, notes, productsById]);
+
+  return (
+    <Layout
+      title="Cart"
+      actions={
+        <button
+          className="button ghost"
+          type="button"
+          onClick={refresh}
+          disabled={loading || busy}
+        >
+          Refresh
+        </button>
+      }
+    >
+      {notice ? <div className="notice">{notice}</div> : null}
+      <ErrorNotice error={error} />
+      {content}
+    </Layout>
   );
 }
-
-export default Cart;

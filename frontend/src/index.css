@@ -1,0 +1,205 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  --fb-bg: Canvas;
+  --fb-fg: CanvasText;
+  --fb-muted: color-mix(in srgb, CanvasText 65%, Canvas);
+  --fb-border: color-mix(in srgb, CanvasText 18%, Canvas);
+  --fb-surface: color-mix(in srgb, Canvas 92%, CanvasText);
+  --fb-accent: AccentColor;
+  --fb-accent-contrast: AccentColorText;
+  --fb-danger: #b42318;
+
+  --fb-radius: 12px;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--fb-bg);
+  color: var(--fb-fg);
+}
+
+a { color: inherit; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--fb-bg) 90%, var(--fb-surface));
+  border-bottom: 1px solid var(--fb-border);
+  backdrop-filter: blur(10px);
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  width: min(1100px, 100%);
+  margin: 0 auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+
+.pill.active {
+  background: color-mix(in srgb, var(--fb-accent) 18%, var(--fb-bg));
+  border-color: color-mix(in srgb, var(--fb-accent) 35%, var(--fb-bg));
+}
+
+.surface {
+  background: color-mix(in srgb, var(--fb-bg) 86%, var(--fb-surface));
+  border: 1px solid var(--fb-border);
+  border-radius: var(--fb-radius);
+}
+
+.card {
+  padding: 14px;
+}
+
+.media {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--fb-border);
+  background: color-mix(in srgb, var(--fb-bg) 80%, var(--fb-surface));
+}
+
+.media.small {
+  aspect-ratio: 16 / 9;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.stack { display: grid; gap: 10px; }
+
+.h1 { font-size: 22px; font-weight: 700; margin: 0; }
+.h2 { font-size: 16px; font-weight: 700; margin: 0; }
+.muted { color: var(--fb-muted); }
+
+.input, .button, .select {
+  font: inherit;
+  border-radius: 10px;
+  border: 1px solid var(--fb-border);
+  background: var(--fb-bg);
+  color: var(--fb-fg);
+  padding: 10px 12px;
+}
+
+.input { width: 100%; }
+
+.button {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: color-mix(in srgb, var(--fb-accent) 14%, var(--fb-bg));
+  border-color: color-mix(in srgb, var(--fb-accent) 35%, var(--fb-bg));
+}
+
+.button:hover { background: color-mix(in srgb, var(--fb-accent) 20%, var(--fb-bg)); }
+
+.button.primary {
+  background: var(--fb-accent);
+  color: var(--fb-accent-contrast);
+  border-color: color-mix(in srgb, var(--fb-accent) 60%, var(--fb-bg));
+}
+
+.button.primary:hover { filter: brightness(0.95); }
+
+.button.ghost {
+  background: transparent;
+  border-color: var(--fb-border);
+}
+
+.button.danger {
+  background: color-mix(in srgb, var(--fb-danger) 12%, var(--fb-bg));
+  border-color: color-mix(in srgb, var(--fb-danger) 40%, var(--fb-bg));
+}
+
+.kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  padding: 2px 8px;
+  border: 1px solid var(--fb-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fb-bg) 80%, var(--fb-surface));
+}
+
+.notice {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--fb-border);
+  background: color-mix(in srgb, var(--fb-bg) 70%, var(--fb-surface));
+}
+
+.notice.error {
+  border-color: color-mix(in srgb, var(--fb-danger) 45%, var(--fb-bg));
+  background: color-mix(in srgb, var(--fb-danger) 10%, var(--fb-bg));
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th, .table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--fb-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.small { font-size: 13px; }
+
+@media (max-width: 600px) {
+  .nav-inner { padding: 12px 14px; }
+  .container { padding: 14px; }
+}

@@ -43,6 +43,7 @@ public class RestaurantService {
                 .name(request.getName())
                 .address(request.getAddress())
                 .description(request.getDescription())
+            .imageUrl(request.getImageUrl())
                 .build();
 
         Restaurant saved = restaurantRepository.save(restaurant);
@@ -57,6 +58,7 @@ public class RestaurantService {
         restaurant.setName(request.getName());
         restaurant.setAddress(request.getAddress());
         restaurant.setDescription(request.getDescription());
+        restaurant.setImageUrl(request.getImageUrl());
 
         Restaurant updated = restaurantRepository.save(restaurant);
         return mapToResponse(updated);
@@ -76,6 +78,7 @@ public class RestaurantService {
                 .name(restaurant.getName())
                 .address(restaurant.getAddress())
                 .description(restaurant.getDescription())
+                .imageUrl(restaurant.getImageUrl())
                 .createdAt(restaurant.getCreatedAt())
                 .updatedAt(restaurant.getUpdatedAt())
                 .build();

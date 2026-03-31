@@ -19,4 +19,6 @@ public class RestaurantRequest {
     private String address;
 
     private String description;
+
+    private String imageUrl;
 }

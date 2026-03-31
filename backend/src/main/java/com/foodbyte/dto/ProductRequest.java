@@ -19,12 +19,16 @@ public class ProductRequest {
 
     private String description;
 
+    private String imageUrl;
+
     @NotNull(message = "Product price is required")
     @Min(value = 0, message = "Price must be non-negative")
     private Double price;
 
     @NotNull(message = "Restaurant ID is required")
     private Long restaurantId;
+
+    private Long categoryId;
 
     private Boolean available = true;
 }

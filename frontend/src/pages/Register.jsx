@@ -1,97 +1,114 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import Message from "../components/Message";
-import PageHeader from "../components/PageHeader";
-import { getErrorMessage, registerUser, saveAuth } from "../services/api";
+import Layout from "../components/Layout";
+import ErrorNotice from "../components/ErrorNotice";
+import { useAuth } from "../auth/AuthContext";
+import { register } from "../services/auth";
 
-function Register() {
+export default function RegisterPage() {
+  const { setAuth } = useAuth();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("USER");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [error, setError] = useState(null);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  async function onSubmit(e) {
+    e.preventDefault();
+    setError(null);
     setLoading(true);
-    setError("");
-    setSuccess("");
-
     try {
-      const data = await registerUser(formData);
-      saveAuth(data);
-      setSuccess("Registration successful.");
-      setTimeout(() => navigate("/restaurants"), 800);
-    } catch (apiError) {
-      setError(getErrorMessage(apiError, "Registration failed. Please try again."));
+      const data = await register({
+        email,
+        name,
+        password,
+        role,
+      });
+      setAuth(data);
+      const isAdmin = String(data?.role || role || "").toUpperCase() === "ADMIN";
+      navigate(isAdmin ? "/admin" : "/restaurants");
+    } catch (err) {
+      setError(err);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <main className="page narrow-page">
-      <PageHeader title="Register" subtitle="Create your account to start ordering food." />
+    <Layout title="Create account">
+      <div className="surface card" style={{ maxWidth: 520, margin: "0 auto" }}>
+        <form className="stack" onSubmit={onSubmit}>
+          <ErrorNotice error={error} />
 
-      <form className="form-card" onSubmit={handleSubmit}>
-        <Message type="error" text={error} />
-        <Message type="success" text={success} />
+          <div className="stack" style={{ gap: 6 }}>
+            <label className="small muted">Name</label>
+            <input
+              className="input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name"
+              minLength={2}
+              required
+            />
+          </div>
 
-        <label>
-          Name
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="Enter your name"
-            required
-          />
-        </label>
+          <div className="stack" style={{ gap: 6 }}>
+            <label className="small muted">Email</label>
+            <input
+              className="input"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@example.com"
+              required
+            />
+          </div>
 
-        <label>
-          Email
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Enter your email"
-            required
-          />
-        </label>
+          <div className="stack" style={{ gap: 6 }}>
+            <label className="small muted">Password</label>
+            <input
+              className="input"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="At least 6 characters"
+              minLength={6}
+              required
+            />
+          </div>
 
-        <label>
-          Password
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Create a password"
-            required
-          />
-        </label>
+          <div className="stack" style={{ gap: 6 }}>
+            <label className="small muted">Account type</label>
+            <select
+              className="select"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="USER">User</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+          </div>
 
-        <button type="submit" className="primary-button" disabled={loading}>
-          {loading ? "Creating account..." : "Register"}
-        </button>
+          <div className="notice">
+            Admin registration can be disabled by the server. If it fails, register as User or set
+            <span className="kbd" style={{ marginLeft: 6 }}>APP_ALLOW_ADMIN_REGISTRATION=true</span>.
+          </div>
 
-        <p className="helper-text">
-          Already have an account? <Link to="/login">Login here</Link>
-        </p>
-      </form>
-    </main>
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <button className="button primary" type="submit" disabled={loading}>
+              {loading ? "Creating…" : "Create account"}
+            </button>
+            <span className="small muted">
+              Already have an account? <Link to="/login">Login</Link>
+            </span>
+          </div>
+        </form>
+      </div>
+    </Layout>
   );
 }
-
-export default Register;

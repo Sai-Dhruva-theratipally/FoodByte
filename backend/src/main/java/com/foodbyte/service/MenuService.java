@@ -47,10 +47,13 @@ public class MenuService {
                 .id(product.getId())
                 .name(product.getName())
                 .description(product.getDescription())
+                .imageUrl(product.getImageUrl())
                 .price(product.getPrice())
                 .available(product.getAvailable())
                 .restaurantId(product.getRestaurant().getId())
                 .restaurantName(product.getRestaurant().getName())
+                .categoryId(product.getCategory() == null ? null : product.getCategory().getId())
+                .categoryName(product.getCategory() == null ? null : product.getCategory().getName())
                 .popularity(product.getPopularity())
                 .build();
     }

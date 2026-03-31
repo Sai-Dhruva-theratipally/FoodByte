@@ -1,82 +1,136 @@
-import { useEffect, useState } from "react";
-import Loading from "../components/Loading";
-import Message from "../components/Message";
-import PageHeader from "../components/PageHeader";
-import { getErrorMessage, getOrderHistory, getProducts } from "../services/api";
+import React, { useEffect, useMemo, useState } from "react";
+import Layout from "../components/Layout";
+import ErrorNotice from "../components/ErrorNotice";
+import { listOrderHistory, listProducts, reorder } from "../services/food";
+import { formatDateTime, formatMoney } from "../utils/format";
 
-function Orders() {
+export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
+  const [productsById, setProductsById] = useState(() => new Map());
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
+
+  async function refresh() {
+    setLoading(true);
+    setError(null);
+    try {
+      const [history, products] = await Promise.all([
+        listOrderHistory(),
+        listProducts(),
+      ]);
+      setOrders(Array.isArray(history) ? history : []);
+      const map = new Map();
+      (Array.isArray(products) ? products : []).forEach((p) => map.set(p.id, p));
+      setProductsById(map);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const [ordersData, productsData] = await Promise.all([
-          getOrderHistory(),
-          getProducts(),
-        ]);
-        const products = Array.isArray(productsData) ? productsData : [];
-        const productMap = products.reduce((map, product) => {
-          map[product.id] = product;
-          return map;
-        }, {});
-
-        const formattedOrders = (Array.isArray(ordersData) ? ordersData : []).map((order) => ({
-          ...order,
-          items: (order.items || []).map((item) => ({
-            ...item,
-            product: productMap[item.productId] || null,
-          })),
-        }));
-
-        setOrders(formattedOrders);
-      } catch (apiError) {
-        setError(getErrorMessage(apiError, "Could not load order history."));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
-    <main className="page">
-      <PageHeader title="Orders" subtitle="Track your past orders in one place." />
+  async function onReorder(orderId) {
+    setBusy(true);
+    setNotice(null);
+    setError(null);
+    try {
+      const created = await reorder(orderId);
+      setNotice(`Reordered successfully (#${created?.id})`);
+      await refresh();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
 
-      {loading ? <Loading text="Loading orders..." /> : null}
-      <Message type="error" text={error} />
+  const content = useMemo(() => {
+    if (loading) return <div className="notice">Loading orders…</div>;
+    if (!orders.length) return <div className="notice">No orders yet.</div>;
 
-      {!loading && !error ? (
-        <div className="stack-layout">
-          {orders.length > 0 ? (
-            orders.map((order) => (
-              <article className="card" key={order.id}>
-                <h3>Order #{order.id}</h3>
-                <p>Status: {order.status || "PENDING"}</p>
-                <p>Total: Rs. {Number(order.totalAmount || 0).toFixed(2)}</p>
-                <p className="muted-text">
-                  {order.createdAt
-                    ? new Date(order.createdAt).toLocaleString()
-                    : "Date not available"}
-                </p>
-                <div className="order-items">
-                  {(order.items || []).map((item) => (
-                    <p key={item.id} className="muted-text">
-                      {item.product?.name || `Product #${item.productId}`} x {item.quantity}
-                    </p>
-                  ))}
+    return (
+      <div className="stack">
+        {orders.map((o) => (
+          <div key={o.id} className="surface card stack">
+            <div className="row" style={{ justifyContent: "space-between" }}>
+              <div className="stack" style={{ gap: 2 }}>
+                <div className="h2">Order #{o.id}</div>
+                <div className="muted small">
+                  {o.status} • {formatDateTime(o.createdAt)}
                 </div>
-              </article>
-            ))
-          ) : (
-            <div className="status-card">No orders found.</div>
-          )}
-        </div>
-      ) : null}
-    </main>
+              </div>
+              <div className="stack" style={{ alignItems: "flex-end", gap: 2 }}>
+                <div className="muted small">Total</div>
+                <div className="h2">{formatMoney(o.totalAmount)}</div>
+              </div>
+            </div>
+
+            <div className="surface card" style={{ padding: 0 }}>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th style={{ width: 90 }}>Qty</th>
+                    <th style={{ width: 120 }}>Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(o.items || []).map((it) => {
+                    const p = productsById.get(it.productId);
+                    return (
+                      <tr key={it.id}>
+                        <td>
+                          <div className="h2">{p?.name || `Product #${it.productId}`}</div>
+                        </td>
+                        <td>{it.quantity}</td>
+                        <td>{formatMoney(it.price)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="row" style={{ justifyContent: "flex-end" }}>
+              <button
+                className="button"
+                type="button"
+                onClick={() => onReorder(o.id)}
+                disabled={busy}
+              >
+                Reorder
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }, [busy, loading, orders, productsById]);
+
+  return (
+    <Layout
+      title="Orders"
+      actions={
+        <button
+          className="button ghost"
+          type="button"
+          onClick={refresh}
+          disabled={loading || busy}
+        >
+          Refresh
+        </button>
+      }
+    >
+      {notice ? <div className="notice">{notice}</div> : null}
+      <ErrorNotice error={error} />
+      {content}
+    </Layout>
   );
 }
-
-export default Orders;

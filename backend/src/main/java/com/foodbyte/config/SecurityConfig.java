@@ -68,6 +68,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/restaurants", "/products", "/products/popular", "/products/*").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/categories", "/categories/*").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

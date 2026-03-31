@@ -1,80 +1,103 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import Message from "../components/Message";
-import PageHeader from "../components/PageHeader";
-import { getErrorMessage, loginUser, saveAuth } from "../services/api";
+import React, { useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import Layout from "../components/Layout";
+import ErrorNotice from "../components/ErrorNotice";
+import { useAuth } from "../auth/AuthContext";
+import { login } from "../services/auth";
 
-function Login() {
+export default function LoginPage() {
+  const { setAuth } = useAuth();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [params] = useSearchParams();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginAs, setLoginAs] = useState("USER");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  async function onSubmit(e) {
+    e.preventDefault();
+    setError(null);
     setLoading(true);
-    setError("");
-
     try {
-      const data = await loginUser(formData);
-      saveAuth(data);
-      navigate("/restaurants");
-    } catch (apiError) {
-      setError(getErrorMessage(apiError, "Login failed. Please try again."));
+      const data = await login({ email, password });
+
+      const actualRole = String(data?.role || "").toUpperCase();
+      const desiredRole = String(loginAs || "").toUpperCase();
+      if (desiredRole && actualRole && desiredRole !== actualRole) {
+        throw `This account is not ${desiredRole}.`;
+      }
+
+      setAuth(data);
+      const isAdmin = actualRole === "ADMIN";
+      const next = params.get("next") || (isAdmin ? "/admin" : "/restaurants");
+      navigate(next);
+    } catch (err) {
+      setError(err);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <main className="page narrow-page">
-      <PageHeader title="Login" subtitle="Sign in to order food and manage your cart." />
+    <Layout title="Login">
+      <div className="surface card" style={{ maxWidth: 520, margin: "0 auto" }}>
+        <form className="stack" onSubmit={onSubmit}>
+          <ErrorNotice error={error} />
 
-      <form className="form-card" onSubmit={handleSubmit}>
-        <Message type="error" text={error} />
+          <div className="notice">
+            Sign in with your User or Admin account.
+          </div>
 
-        <label>
-          Email
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Enter your email"
-            required
-          />
-        </label>
+          <div className="stack" style={{ gap: 6 }}>
+            <label className="small muted">Email</label>
+            <input
+              className="input"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@example.com"
+              required
+            />
+          </div>
 
-        <label>
-          Password
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Enter your password"
-            required
-          />
-        </label>
+          <div className="stack" style={{ gap: 6 }}>
+            <label className="small muted">Password</label>
+            <input
+              className="input"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+          </div>
 
-        <button type="submit" className="primary-button" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
+          <div className="stack" style={{ gap: 6 }}>
+            <label className="small muted">Login as</label>
+            <select
+              className="select"
+              value={loginAs}
+              onChange={(e) => setLoginAs(e.target.value)}
+            >
+              <option value="USER">User</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+          </div>
 
-        <p className="helper-text">
-          New user? <Link to="/register">Create an account</Link>
-        </p>
-      </form>
-    </main>
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <button className="button primary" type="submit" disabled={loading}>
+              {loading ? "Signing in…" : "Sign in"}
+            </button>
+            <span className="small muted">
+              New here? <Link to="/register">Create account</Link>
+            </span>
+          </div>
+        </form>
+      </div>
+    </Layout>
   );
 }
-
-export default Login;

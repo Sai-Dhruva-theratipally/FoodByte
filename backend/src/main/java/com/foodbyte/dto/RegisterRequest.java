@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.foodbyte.entity.Role;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,4 +28,7 @@ public class RegisterRequest {
     @Size(min = 6, message = "Password should be at least 6 characters")
     @JsonAlias({"possword"})
     private String password;
+
+    @Builder.Default
+    private Role role = Role.USER;
 }

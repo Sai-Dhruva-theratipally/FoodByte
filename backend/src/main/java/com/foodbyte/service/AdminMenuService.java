@@ -8,8 +8,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.foodbyte.dto.ProductRequest;
 import com.foodbyte.dto.ProductResponse;
+import com.foodbyte.entity.Category;
 import com.foodbyte.entity.Product;
 import com.foodbyte.exception.NotFoundException;
+import com.foodbyte.repository.CategoryRepository;
 import com.foodbyte.repository.ProductRepository;
 import com.foodbyte.repository.RestaurantRepository;
 
@@ -21,6 +23,7 @@ public class AdminMenuService {
 
     private final ProductRepository productRepository;
     private final RestaurantRepository restaurantRepository;
+    private final CategoryRepository categoryRepository;
 
     public List<ProductResponse> getAllProducts() {
         return productRepository.findAll().stream().map(this::mapToResponse).collect(Collectors.toList());
@@ -31,13 +34,21 @@ public class AdminMenuService {
         var restaurant = restaurantRepository.findById(request.getRestaurantId())
                 .orElseThrow(() -> new NotFoundException("Restaurant not found: " + request.getRestaurantId()));
 
+        Category category = null;
+        if (request.getCategoryId() != null) {
+            category = categoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new NotFoundException("Category not found: " + request.getCategoryId()));
+        }
+
         Product product = Product.builder()
                 .name(request.getName())
                 .description(request.getDescription())
+            .imageUrl(request.getImageUrl())
                 .price(request.getPrice())
                 .available(request.getAvailable() == null ? true : request.getAvailable())
                 .popularity(0)
                 .restaurant(restaurant)
+                .category(category)
                 .build();
 
         Product saved = productRepository.save(product);
@@ -52,11 +63,19 @@ public class AdminMenuService {
         var restaurant = restaurantRepository.findById(request.getRestaurantId())
                 .orElseThrow(() -> new NotFoundException("Restaurant not found: " + request.getRestaurantId()));
 
+        Category category = null;
+        if (request.getCategoryId() != null) {
+            category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new NotFoundException("Category not found: " + request.getCategoryId()));
+        }
+
         product.setName(request.getName());
         product.setDescription(request.getDescription());
+        product.setImageUrl(request.getImageUrl());
         product.setPrice(request.getPrice());
         product.setAvailable(request.getAvailable() == null ? true : request.getAvailable());
         product.setRestaurant(restaurant);
+        product.setCategory(category);
 
         Product updated = productRepository.save(product);
         return mapToResponse(updated);
@@ -75,10 +94,13 @@ public class AdminMenuService {
                 .id(product.getId())
                 .name(product.getName())
                 .description(product.getDescription())
+                .imageUrl(product.getImageUrl())
                 .price(product.getPrice())
                 .available(product.getAvailable())
                 .restaurantId(product.getRestaurant().getId())
                 .restaurantName(product.getRestaurant().getName())
+                .categoryId(product.getCategory() == null ? null : product.getCategory().getId())
+                .categoryName(product.getCategory() == null ? null : product.getCategory().getName())
                 .popularity(product.getPopularity())
                 .build();
     }

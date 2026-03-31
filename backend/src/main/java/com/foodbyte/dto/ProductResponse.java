@@ -13,9 +13,12 @@ public class ProductResponse {
     private Long id;
     private String name;
     private String description;
+    private String imageUrl;
     private Double price;
     private Boolean available;
     private Long restaurantId;
     private String restaurantName;
+    private Long categoryId;
+    private String categoryName;
     private Integer popularity;
 }

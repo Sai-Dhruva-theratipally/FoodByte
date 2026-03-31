@@ -1,63 +1,78 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import Loading from "../components/Loading";
-import Message from "../components/Message";
-import PageHeader from "../components/PageHeader";
-import { getRestaurants } from "../services/api";
+import Layout from "../components/Layout";
+import ErrorNotice from "../components/ErrorNotice";
+import { listRestaurants } from "../services/food";
 
-function Restaurants() {
+export default function RestaurantsPage() {
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchRestaurants = async () => {
+    let mounted = true;
+    (async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const data = await getRestaurants();
-        setRestaurants(Array.isArray(data) ? data : data.restaurants || []);
-      } catch (apiError) {
-        setError(apiError.response?.data?.message || "Could not load restaurants.");
+        const data = await listRestaurants();
+        if (mounted) setRestaurants(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (mounted) setError(err);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
+    })();
+    return () => {
+      mounted = false;
     };
-
-    fetchRestaurants();
   }, []);
 
-  return (
-    <main className="page">
-      <PageHeader
-        title="Restaurants"
-        subtitle="Choose a restaurant and explore the available menu items."
-      />
-
-      {loading ? <Loading text="Loading restaurants..." /> : null}
-      <Message type="error" text={error} />
-
-      {!loading && !error ? (
-        <div className="card-grid">
-          {restaurants.length > 0 ? (
-            restaurants.map((restaurant) => (
-              <article className="card" key={restaurant.id}>
-                <h3>{restaurant.name}</h3>
-                <p>{restaurant.description || "Fresh meals and quick delivery."}</p>
-                <p className="muted-text">{restaurant.address || "Address not available"}</p>
-                <Link
-                  to={`/restaurants/${restaurant.id}`}
-                  className="primary-button inline-button"
-                >
-                  View Menu
-                </Link>
-              </article>
-            ))
-          ) : (
-            <div className="status-card">No restaurants found.</div>
-          )}
+  const content = useMemo(() => {
+    if (loading) return <div className="notice">Loading restaurants…</div>;
+    if (restaurants.length === 0)
+      return (
+        <div className="notice">
+          No restaurants yet. Create one in Admin.
         </div>
-      ) : null}
-    </main>
+      );
+
+    return (
+      <div className="grid">
+        {restaurants.map((r) => (
+          <div key={r.id} className="surface card stack">
+            <img
+              className="media"
+              src={r.imageUrl || "/foodbyte.svg"}
+              alt={r.name}
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src =
+                  "/foodbyte.svg";
+              }}
+            />
+            <div className="stack" style={{ gap: 2 }}>
+              <div className="h2">{r.name}</div>
+              <div className="muted small">{r.address || ""}</div>
+            </div>
+            <div className="muted small">{r.description || ""}</div>
+            <div className="row" style={{ justifyContent: "space-between" }}>
+              <Link className="button" to={`/restaurants/${r.id}`}>
+                View menu
+              </Link>
+              <span className="kbd">#{r.id}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }, [loading, restaurants]);
+
+  return (
+    <Layout title="Restaurants">
+      <ErrorNotice error={error} />
+      {content}
+    </Layout>
   );
 }
-
-export default Restaurants;

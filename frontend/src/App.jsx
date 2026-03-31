@@ -1,67 +1,59 @@
+import React from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import Navbar from "./components/Navbar";
-import ProtectedRoute from "./components/ProtectedRoute";
-import Cart from "./pages/Cart";
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Orders from "./pages/Orders";
-import Profile from "./pages/Profile";
-import Register from "./pages/Register";
-import RestaurantDetails from "./pages/RestaurantDetails";
-import Restaurants from "./pages/Restaurants";
+import { AuthProvider } from "./auth/AuthContext";
+import RequireAuth from "./components/RequireAuth";
 
-function App() {
-  return (
-    <BrowserRouter>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route
-          path="/restaurants"
-          element={
-            <ProtectedRoute>
-              <Restaurants />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/restaurants/:restaurantId"
-          element={
-            <ProtectedRoute>
-              <RestaurantDetails />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/cart"
-          element={
-            <ProtectedRoute>
-              <Cart />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/orders"
-          element={
-            <ProtectedRoute>
-              <Orders />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
-  );
+import LoginPage from "./pages/Login";
+import RegisterPage from "./pages/Register";
+import RestaurantsPage from "./pages/Restaurants";
+import RestaurantMenuPage from "./pages/RestaurantMenu";
+import CategoriesPage from "./pages/Categories";
+import CartPage from "./pages/Cart";
+import OrdersPage from "./pages/Orders";
+import AdminPage from "./pages/Admin";
+import NotFoundPage from "./pages/NotFound";
+
+export default function App() {
+	return (
+		<AuthProvider>
+			<BrowserRouter>
+				<Routes>
+					<Route path="/" element={<Navigate to="/restaurants" replace />} />
+					<Route path="/login" element={<LoginPage />} />
+					<Route path="/register" element={<RegisterPage />} />
+
+					<Route path="/restaurants" element={<RestaurantsPage />} />
+					<Route path="/restaurants/:id" element={<RestaurantMenuPage />} />
+					<Route path="/categories" element={<CategoriesPage />} />
+
+					<Route
+						path="/cart"
+						element={
+							<RequireAuth>
+								<CartPage />
+							</RequireAuth>
+						}
+					/>
+					<Route
+						path="/orders"
+						element={
+							<RequireAuth>
+								<OrdersPage />
+							</RequireAuth>
+						}
+					/>
+					<Route
+						path="/admin"
+						element={
+							<RequireAuth>
+								<AdminPage />
+							</RequireAuth>
+						}
+					/>
+
+					<Route path="*" element={<NotFoundPage />} />
+				</Routes>
+			</BrowserRouter>
+		</AuthProvider>
+	);
 }
-
-export default App;
