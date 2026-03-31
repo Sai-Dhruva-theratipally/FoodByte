@@ -66,6 +66,11 @@ input {
   cursor: pointer;
 }
 
+.nav-user {
+  color: #64748b;
+  font-weight: 600;
+}
+
 .nav-links .active {
   background: #ffe8d9;
   color: #b45309;
@@ -142,6 +147,13 @@ input {
   border-radius: 12px;
   padding: 0.8rem 1.1rem;
   cursor: pointer;
+}
+
+.primary-button:disabled,
+.secondary-button:disabled,
+.danger-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .primary-button {
@@ -294,14 +306,20 @@ input {
   border-bottom: none;
 }
 
+.order-items {
+  margin-top: 0.75rem;
+}
+
 @media (max-width: 768px) {
   .navbar,
-  .hero,
   .list-row,
   .profile-row {
-    grid-template-columns: 1fr;
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
   }
 
   .page {

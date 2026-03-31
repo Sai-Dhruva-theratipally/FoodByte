@@ -4,6 +4,8 @@ import Message from "../components/Message";
 import PageHeader from "../components/PageHeader";
 import {
   getCart,
+  getErrorMessage,
+  getProducts,
   placeOrder,
   removeCartItem,
   updateCartItem,
@@ -18,10 +20,22 @@ function Cart() {
 
   const fetchCart = async () => {
     try {
-      const data = await getCart();
-      setCartItems(Array.isArray(data) ? data : data.items || []);
+      const [cartData, productsData] = await Promise.all([getCart(), getProducts()]);
+      const products = Array.isArray(productsData) ? productsData : [];
+      const productMap = products.reduce((map, product) => {
+        map[product.id] = product;
+        return map;
+      }, {});
+      const items = Array.isArray(cartData?.items) ? cartData.items : [];
+
+      setCartItems(
+        items.map((item) => ({
+          ...item,
+          product: productMap[item.productId] || null,
+        }))
+      );
     } catch (apiError) {
-      setError(apiError.response?.data?.message || "Could not load cart.");
+      setError(getErrorMessage(apiError, "Could not load cart."));
     } finally {
       setLoading(false);
     }
@@ -40,11 +54,11 @@ function Cart() {
     setMessage("");
 
     try {
-      await updateCartItem(id, { quantity });
+      await updateCartItem(id, quantity);
       setMessage("Cart updated.");
       fetchCart();
     } catch (apiError) {
-      setError(apiError.response?.data?.message || "Could not update quantity.");
+      setError(getErrorMessage(apiError, "Could not update quantity."));
     }
   };
 
@@ -57,7 +71,7 @@ function Cart() {
       setMessage("Item removed from cart.");
       fetchCart();
     } catch (apiError) {
-      setError(apiError.response?.data?.message || "Could not remove item.");
+      setError(getErrorMessage(apiError, "Could not remove item."));
     }
   };
 
@@ -67,18 +81,18 @@ function Cart() {
     setMessage("");
 
     try {
-      await placeOrder();
+      await placeOrder("");
       setMessage("Order placed successfully.");
       fetchCart();
     } catch (apiError) {
-      setError(apiError.response?.data?.message || "Could not place order.");
+      setError(getErrorMessage(apiError, "Could not place order."));
     } finally {
       setPlacingOrder(false);
     }
   };
 
   const totalAmount = cartItems.reduce((sum, item) => {
-    const price = item.price || item.product?.price || 0;
+    const price = Number(item.product?.price || 0);
     return sum + price * item.quantity;
   }, 0);
 
@@ -98,8 +112,13 @@ function Cart() {
                 {cartItems.map((item) => (
                   <div className="list-row" key={item.id}>
                     <div>
-                      <h3>{item.product?.name || item.name}</h3>
-                      <p className="muted-text">Rs. {item.product?.price || item.price}</p>
+                      <h3>{item.product?.name || `Product #${item.productId}`}</h3>
+                      <p className="muted-text">
+                        {item.product?.restaurantName || "Restaurant not available"}
+                      </p>
+                      <p className="muted-text">
+                        Rs. {item.product?.price ?? 0}
+                      </p>
                     </div>
 
                     <div className="quantity-controls">
@@ -130,7 +149,7 @@ function Cart() {
               </div>
 
               <div className="summary-card">
-                <h3>Total: Rs. {totalAmount}</h3>
+                <h3>Total: Rs. {totalAmount.toFixed(2)}</h3>
                 <button
                   type="button"
                   className="primary-button"

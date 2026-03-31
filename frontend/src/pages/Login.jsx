@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Message from "../components/Message";
 import PageHeader from "../components/PageHeader";
-import { loginUser } from "../services/api";
+import { getErrorMessage, loginUser, saveAuth } from "../services/api";
 
 function Login() {
   const navigate = useNavigate();
@@ -25,15 +25,10 @@ function Login() {
 
     try {
       const data = await loginUser(formData);
-      localStorage.setItem("token", data.token);
-
-      if (data.user) {
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
-
+      saveAuth(data);
       navigate("/restaurants");
     } catch (apiError) {
-      setError(apiError.response?.data?.message || "Login failed. Please try again.");
+      setError(getErrorMessage(apiError, "Login failed. Please try again."));
     } finally {
       setLoading(false);
     }

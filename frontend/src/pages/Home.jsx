@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
+import { getStoredUser } from "../services/api";
 
 function Home() {
   const token = localStorage.getItem("token");
+  const user = getStoredUser();
 
   return (
     <main className="page">
@@ -10,7 +12,11 @@ function Home() {
         <div className="hero-copy">
           <PageHeader
             title="Order food without the confusion"
-            subtitle="A clean hackathon-ready food ordering frontend built with React, Router, and Axios."
+            subtitle={
+              token
+                ? `Welcome back${user?.name ? `, ${user.name}` : ""}. Browse restaurants and place your next order.`
+                : "A clean hackathon-ready food ordering frontend built with React, Router, and Axios."
+            }
           />
           <div className="hero-actions">
             <Link to={token ? "/restaurants" : "/login"} className="primary-button">

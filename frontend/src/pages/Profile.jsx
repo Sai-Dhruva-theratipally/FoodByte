@@ -1,8 +1,8 @@
 import PageHeader from "../components/PageHeader";
+import { getStoredUser } from "../services/api";
 
 function Profile() {
-  const savedUser = localStorage.getItem("user");
-  const user = savedUser ? JSON.parse(savedUser) : null;
+  const user = getStoredUser();
 
   return (
     <main className="page narrow-page">
@@ -10,12 +10,20 @@ function Profile() {
 
       <div className="form-card">
         <div className="profile-row">
+          <span>User ID</span>
+          <strong>{user?.userId || "Not available"}</strong>
+        </div>
+        <div className="profile-row">
           <span>Name</span>
           <strong>{user?.name || "Not available"}</strong>
         </div>
         <div className="profile-row">
           <span>Email</span>
           <strong>{user?.email || "Not available"}</strong>
+        </div>
+        <div className="profile-row">
+          <span>Role</span>
+          <strong>{user?.role || "Not available"}</strong>
         </div>
         <div className="profile-row">
           <span>Token Status</span>

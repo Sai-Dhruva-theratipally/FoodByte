@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Message from "../components/Message";
 import PageHeader from "../components/PageHeader";
-import { registerUser } from "../services/api";
+import { getErrorMessage, registerUser, saveAuth } from "../services/api";
 
 function Register() {
   const navigate = useNavigate();
@@ -27,11 +27,12 @@ function Register() {
     setSuccess("");
 
     try {
-      await registerUser(formData);
-      setSuccess("Registration successful. Please login.");
-      setTimeout(() => navigate("/login"), 1000);
+      const data = await registerUser(formData);
+      saveAuth(data);
+      setSuccess("Registration successful.");
+      setTimeout(() => navigate("/restaurants"), 800);
     } catch (apiError) {
-      setError(apiError.response?.data?.message || "Registration failed. Please try again.");
+      setError(getErrorMessage(apiError, "Registration failed. Please try again."));
     } finally {
       setLoading(false);
     }
